@@ -2,6 +2,8 @@ from controllers.pdf_to_script_controller import convert_pdf_to_script
 from controllers.tts_controller import TTSController
 from controllers.video_controller import VideoController
 import os
+import time
+import sys
 
 
 def process_pdf_to_video(pdf_path):
@@ -52,6 +54,24 @@ def process_pdf_to_video(pdf_path):
         raise RuntimeError(f"Video processing failed: {str(e)}")
 
 
+def cleanup_failed_outputs(base_name):
+    """Clean up any partially created files from failed processing"""
+    paths_to_cleanup = [
+        os.path.join("scripts", f"{base_name}.json"),
+        os.path.join("audio", f"{base_name}.mp3"),
+        os.path.join("audio", "subtitles", f"{base_name}.srt"),
+        os.path.join("output", f"{base_name}_final.mp4")
+    ]
+
+    for path in paths_to_cleanup:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"Cleaned up: {path}")
+            except Exception as e:
+                print(f"Failed to clean up {path}: {str(e)}")
+
+
 def main():
     # Create necessary directories
     for directory in ["input", "scripts", "audio", os.path.join("audio", "subtitles"), "output"]:
@@ -59,42 +79,41 @@ def main():
 
     input_folder = "input"
     processed_files = []
-    failed_files = []
+    max_retries = 3
+    retry_delay = 5  # seconds
 
     # Process all PDF files in input folder
     for filename in os.listdir(input_folder):
         if filename.lower().endswith('.pdf'):
             pdf_path = os.path.join(input_folder, filename)
+            base_name = os.path.splitext(filename)[0]
+
             print(f"\n{'=' * 50}")
             print(f"Processing {filename}")
             print(f"{'=' * 50}")
 
-            try:
-                output_path = process_pdf_to_video(pdf_path)
-                processed_files.append((filename, output_path))
-                print(f"\n== Successfully processed {filename} ==")
+            retries = 0
+            while retries < max_retries:
+                try:
+                    output_path = process_pdf_to_video(pdf_path)
+                    processed_files.append((filename, output_path))
+                    print(f"\n== Successfully processed {filename} ==")
+                    break
 
-            except Exception as e:
-                print(f"\nError processing {filename}: {str(e)}")
-                failed_files.append((filename, str(e)))
+                except Exception as e:
+                    retries += 1
+                    print(f"\nError processing {filename} (Attempt {retries}/{max_retries}): {str(e)}")
 
-    # Print summary
-    print("\n\n" + "=" * 50)
-    print("PROCESSING SUMMARY")
-    print("=" * 50)
-
-    if processed_files:
-        print("\nSuccessfully processed files:")
-        for filename, output_path in processed_files:
-            print(f"- {filename} -> {output_path}")
-
-    if failed_files:
-        print("\nFailed files:")
-        for filename, error in failed_files:
-            print(f"- {filename}: {error}")
-
-    print(f"\nTotal processed: {len(processed_files)}")
-    print(f"Total failed: {len(failed_files)}")
+                    if retries < max_retries:
+                        print(f"Cleaning up failed outputs and retrying in {retry_delay} seconds...")
+                        cleanup_failed_outputs(base_name)
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"\nMax retries reached for {filename}. Stopping program.")
+                        print("\nFiles processed before failure:")
+                        for proc_file, out_path in processed_files:
+                            print(f"- {proc_file} -> {out_path}")
+                        sys.exit(1)
 
 
 if __name__ == "__main__":
