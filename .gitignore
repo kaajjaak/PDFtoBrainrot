@@ -175,3 +175,5 @@ cython_debug/
 *.pdf
 *.mp3
 *.srt
+.idea
+scripts/*.txt
