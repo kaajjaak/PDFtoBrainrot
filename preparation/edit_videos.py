@@ -1,130 +1,55 @@
-import cv2
 import os
-from datetime import datetime
+from moviepy.editor import VideoFileClip
+from moviepy.config import change_settings
+change_settings({"IMAGEMAGICK_BINARY": r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"})
 
 
-def get_duration_str(frame_count, fps):
-    duration_sec = frame_count / fps
-    return f"{int(duration_sec // 60)}m {int(duration_sec % 60)}s"
+def edit_video(input_file, output_file):
+    try:
+        # Load video
+        clip = VideoFileClip(input_file)
 
+        # Get video duration and calculate middle section
+        duration = clip.duration
+        if duration <= 20:  # If video is too short
+            print(f"Video {input_file} is too short to edit")
+            return
 
-def edit_videos(input_dir, output_dir):
-    # Verify directories
-    global cap, out
-    if not os.path.exists(input_dir):
-        print(f"Input directory '{input_dir}' does not exist!")
-        return
+        # Cut off the first 10 seconds and keep the rest
+        start_time = 10
+        trimmed_clip = clip.subclip(start_time)
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Created output directory: {output_dir}")
+        # Crop to TikTok aspect ratio (9:16)
+        width, height = trimmed_clip.size
+        target_width = height * 9 // 16
+        x1 = (width - target_width) // 2
+        cropped_clip = trimmed_clip.crop(x1=x1, x2=x1 + target_width)
 
-    # Get list of MP4 files
-    mp4_files = [f for f in os.listdir(input_dir) if f.endswith('.mp4')]
-    if not mp4_files:
-        print(f"No MP4 files found in '{input_dir}'")
-        return
+        # Remove audio
+        final_clip = cropped_clip.without_audio()
 
-    print(f"Found {len(mp4_files)} MP4 files to process")
+        # Write the final video
+        final_clip.write_videofile(
+            output_file,
+            codec="libx264",
+            audio=False,
+            preset='ultrafast'
+        )
 
-    for file_name in mp4_files:
-        input_path = os.path.join(input_dir, file_name)
-        output_path = os.path.join(output_dir, f"edited_{file_name}")
-
-        print(f"\nProcessing: {file_name}")
-        start_time = datetime.now()
-
-        try:
-            # Open video file
-            cap = cv2.VideoCapture(input_path)
-            if not cap.isOpened():
-                print(f"Failed to open video: {input_path}")
-                continue
-
-            # Get video properties
-            fps = int(cap.get(cv2.CAP_PROP_FPS))
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-            print(f"Video properties:")
-            print(f"- Duration: {get_duration_str(frame_count, fps)}")
-            print(f"- FPS: {fps}")
-            print(f"- Resolution: {width}x{height}")
-
-            # Calculate frame positions
-            start_frame = fps * 10  # Skip first 10 seconds
-            middle_start = int(frame_count * 0.25)
-            middle_end = int(frame_count * 0.75)
-
-            # Calculate dimensions for TikTok aspect ratio (9:16)
-            target_width = int(height * 9 / 16)
-            x_start = int((width - target_width) / 2)
-
-            # Try different codecs
-            codecs = ['mp4v', 'XVID', 'MJPG']
-            out = None
-
-            for codec in codecs:
-                try:
-                    fourcc = cv2.VideoWriter_fourcc(*codec)
-                    temp_output = output_path if codec == 'mp4v' else output_path.replace('.mp4', '.avi')
-                    out = cv2.VideoWriter(temp_output, fourcc, fps, (target_width, height))
-                    if out.isOpened():
-                        print(f"Using codec: {codec}")
-                        break
-                except Exception as e:
-                    print(f"Codec {codec} failed, trying next...")
-                    if out is not None:
-                        out.release()
-
-            if out is None or not out.isOpened():
-                raise Exception("Could not initialize video writer with any codec")
-
-            frame_num = 0
-            frames_to_process = middle_end - middle_start
-            processed_frames = 0
-            last_progress = -1
-
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                if frame_num >= start_frame and middle_start <= frame_num <= middle_end:
-                    # Crop to center for TikTok aspect ratio
-                    cropped = frame[:, x_start:x_start + target_width]
-
-                    if cropped.shape[1] == target_width and cropped.shape[0] == height:
-                        out.write(cropped)
-                        processed_frames += 1
-
-                        # Update progress every 5%
-                        progress = int((processed_frames / frames_to_process) * 100)
-                        if progress % 5 == 0 and progress != last_progress:
-                            elapsed_time = datetime.now() - start_time
-                            print(f"Progress: {progress}% (Time elapsed: {elapsed_time})")
-                            last_progress = progress
-
-                frame_num += 1
-
-            # Release resources
-            cap.release()
-            out.release()
-
-            total_time = datetime.now() - start_time
-            print(f"Successfully edited: {output_path}")
-            print(f"Total processing time: {total_time}")
-
-        except Exception as e:
-            print(f"Failed to edit {file_name}: {str(e)}")
-            if 'cap' in locals(): cap.release()
-            if 'out' in locals() and out is not None: out.release()
+        print(f"Successfully edited: {output_file}")
+    except Exception as e:
+        print(f"Failed to edit {input_file}: {str(e)}")
+    finally:
+        # Ensure all clips are closed even if an error occurs
+        if 'clip' in locals(): clip.close()
+        if 'trimmed_clip' in locals(): trimmed_clip.close()
+        if 'cropped_clip' in locals(): cropped_clip.close()
+        if 'final_clip' in locals(): final_clip.close()
 
 
 if __name__ == "__main__":
-    INPUT_FOLDER = "downloads"
-    OUTPUT_FOLDER = "../videos/minecraft"
+    INPUT_FILE = r".\downloads\Over an Hour of clean Minecraft Parkour (No Falls, Full Daytime, Download in description).mp4"  # Specify the input file path here
+    OUTPUT_FILE = "../videos/minecraft/minecraft_02.mp4"  # Specify the output file path here
 
     print("Starting video editing process...")
-    edit_videos(INPUT_FOLDER, OUTPUT_FOLDER)
+    edit_video(INPUT_FILE, OUTPUT_FILE)
