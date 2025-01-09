@@ -101,7 +101,7 @@ class PDFProcessor:
             print(f"Run created with ID: {run.id}")
 
             # Wait for completion with timeout and better error handling
-            max_retries = 30
+            max_retries = 45
             retry_count = 0
 
             print("\nWaiting for assistant to complete...")

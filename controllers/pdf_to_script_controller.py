@@ -1,6 +1,6 @@
 import os
 import json
-from modules.assistant_api import PDFProcessor
+from modules.gemini_api import PDFProcessor
 
 
 def convert_pdf_to_script(pdf_path, prompt_path):
