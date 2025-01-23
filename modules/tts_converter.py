@@ -119,7 +119,7 @@ class PollyTTS:
             ssml_text += '</speak>'
 
             base_name = os.path.splitext(os.path.basename(script_path))[0]
-            s3_prefix = f"polly-output/{base_name}_{int(time.time())}"
+            s3_prefix = f"polly-output/{base_name.replace(' ', '_')}_{int(time.time())}"
 
             # Generate audio
             print("Starting speech synthesis task...")
