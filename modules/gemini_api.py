@@ -59,7 +59,7 @@ class PDFProcessor:
 
             pdf_uri = self.upload_file(pdf_path)
 
-            model_name = "models/gemini-1.5-flash"
+            model_name = "models/gemini-2.0-flash"
             prompt = {
                 "role": "user",
                 "parts": [
