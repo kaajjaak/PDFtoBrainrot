@@ -35,7 +35,7 @@ def process_pdf_to_video(pdf_path):
     # Step 3: Create video
     print("\n== Creating Final Video ==")
     video_controller = VideoController()
-    background_video_path = "videos/minecraft/edited_1 hour 22 minutes of relaxing Minecraft Parkour (60fps, Scenic, Download in the Description).mp4"
+    background_video_path = "videos/minecraft/minecraft_01.mp4"
 
     if not os.path.exists(background_video_path):
         raise FileNotFoundError(f"Background video not found: {background_video_path}")

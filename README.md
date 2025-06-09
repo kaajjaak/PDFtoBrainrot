@@ -11,6 +11,16 @@ This project is currently under development. The following features/fixes are st
 - [ ] Requirements.txt file needs to be created
 - [ ] Windows-specific dependencies need to be made cross-platform compatible
 
+## Installation guide:
+
+1. Run `pip install -r requirements.txt` in the console
+2. Download and install ImageMagick at https://imagemagick.org/script/download.php
+3. Put a mp4 of a long enough video in `preparation/downloads`
+4. Run `preparation/edit_videos.py`
+5. Put PDF(s) in the `input` folder
+6. Rename `.env.template` to `.env` and fill in the values
+7. Run `main.py`
+
 ## Basic Usage
 
 1. Place PDF files in the `input` folder

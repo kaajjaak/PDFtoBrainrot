@@ -48,8 +48,8 @@ def edit_video(input_file, output_file):
 
 
 if __name__ == "__main__":
-    INPUT_FILE = r".\downloads\Over an Hour of clean Minecraft Parkour (No Falls, Full Daytime, Download in description).mp4"  # Specify the input file path here
-    OUTPUT_FILE = "../videos/minecraft/minecraft_02.mp4"  # Specify the output file path here
+    INPUT_FILE = r".\downloads\parkour2.mp4"  # Specify the input file path here
+    OUTPUT_FILE = "../videos/minecraft/minecraft_01.mp4"  # Specify the output file path here
 
     print("Starting video editing process...")
     edit_video(INPUT_FILE, OUTPUT_FILE)
